@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/lorentzforces/advent-2024/internal/day_01"
 	"github.com/lorentzforces/advent-2024/internal/run"
 )
 
@@ -29,6 +30,12 @@ func main() {
 }
 
 var runData = []run.PuzzleData{
+	{
+		Day: 1,
+		Part: 1,
+		InputFile: "inputs/day_01_input.txt",
+		Fn: func(s string) (any, error) { return day_01.PartOne(s) },
+	},
 }
 
 func runAll(puzzles []run.PuzzleData) []puzzleResult {
