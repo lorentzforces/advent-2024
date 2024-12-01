@@ -1,6 +1,11 @@
 package day_01
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/lorentzforces/advent-2024/internal/run"
+	"github.com/stretchr/testify/assert"
+)
 
 var testInput string =
 `3   4
@@ -13,11 +18,14 @@ var testInput string =
 
 func TestPartOneSampleInput(t *testing.T) {
 	result, err := PartOne(testInput)
-	if err != nil {
-		t.Fatalf("ERROR: %s", err)
-	}
+	assert.NoError(t, err)
+	run.BailIfFailed(t)
+	assert.Equal(t, 11, result)
+}
 
-	if result != 11 {
-		t.Fatalf("Expected output to be 11, but was %d instead", result)
-	}
+func TestPartTwoSampleInput(t *testing.T) {
+	result, err := PartTwo(testInput)
+	assert.NoError(t, err)
+	run.BailIfFailed(t)
+	assert.Equal(t, 31, result)
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/lorentzforces/advent-2024/internal/run"
 )
 
-func PartOne(input string) (uint, error) {
+func PartOne(input string) (int, error) {
 	lines := run.AsLines(input)
 
 	left, right, err := parseTwoLists(lines)
@@ -20,7 +20,7 @@ func PartOne(input string) (uint, error) {
 	slices.Sort(left)
 	slices.Sort(right)
 
-	var totalDistance uint = 0
+	var totalDistance int = 0
 	for i := 0; i < len(left); i++ {
 		leftVal := left[i]
 		rightVal := right[i]
@@ -34,9 +34,37 @@ func PartOne(input string) (uint, error) {
 	return totalDistance, nil
 }
 
-func parseTwoLists(lines []string) (left []uint, right []uint, err error) {
-	left = make([]uint, len(lines))
-	right = make([]uint, len(lines))
+func PartTwo(input string) (int, error) {
+	lines := run.AsLines(input)
+	left, right, err := parseTwoLists(lines)
+	if err != nil {
+		return 0, fmt.Errorf("Parsing error: %w", err)
+	}
+
+	rightCounts := make(map[int]int)
+	for _, rightVal := range right {
+		_, exists := rightCounts[rightVal]
+		if exists {
+			rightCounts[rightVal]++
+		} else {
+			rightCounts[rightVal] = 1
+		}
+	}
+
+	var total int = 0
+	for _, leftVal := range left {
+		count, exists := rightCounts[leftVal]
+		if exists {
+			total += leftVal * count
+		}
+	}
+
+	return total, nil
+}
+
+func parseTwoLists(lines []string) (left []int, right []int, err error) {
+	left = make([]int, len(lines))
+	right = make([]int, len(lines))
 	for i, line := range lines {
 		strVals := strings.Fields(line)
 		if len(strVals) != 2 {
@@ -56,8 +84,8 @@ func parseTwoLists(lines []string) (left []uint, right []uint, err error) {
 			return nil, nil, fmt.Errorf("Error parsing right value on line %d: %w", i + 1, err)
 		}
 
-		left[i] = uint(leftVal)
-		right[i] = uint(rightVal)
+		left[i] = int(leftVal)
+		right[i] = int(rightVal)
 	}
 
 	return left, right, nil

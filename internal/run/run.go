@@ -3,6 +3,7 @@ package run
 import (
 	"os"
 	"strings"
+	"testing"
 )
 
 type RunFunc func(string) (any, error)
@@ -28,4 +29,8 @@ func AsLines(s string) []string {
 		lines = lines[0:len(lines) - 1]
 	}
 	return lines
+}
+
+func BailIfFailed(t *testing.T) {
+	if t.Failed() { t.FailNow() }
 }
