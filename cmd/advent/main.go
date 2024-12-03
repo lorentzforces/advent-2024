@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/lorentzforces/advent-2024/internal/day_01"
+	"github.com/lorentzforces/advent-2024/internal/day_02"
 	"github.com/lorentzforces/advent-2024/internal/run"
 )
 
@@ -41,6 +42,12 @@ var runData = []run.PuzzleData{
 		Part: 2,
 		InputFile: "inputs/day_01_input.txt",
 		Fn: func(s string) (any, error) { return day_01.PartTwo(s) },
+	},
+	{
+		Day: 2,
+		Part: 1,
+		InputFile: "inputs/day_02_input.txt",
+		Fn: func(s string) (any, error) { return day_02.PartOne(s) },
 	},
 }
 
