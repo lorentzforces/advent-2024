@@ -22,3 +22,24 @@ func TestPartOneSampleInput(t *testing.T) {
 	run.BailIfFailed(t)
 	assert.Equal(t, 2, result)
 }
+
+func TestPartTwoSampleInput(t *testing.T) {
+	result, err := PartTwo(testInput)
+	assert.NoError(t, err)
+	run.BailIfFailed(t)
+	assert.Equal(t, 4, result)
+}
+
+func TestPartTwoWithFirstNumberBad(t *testing.T) {
+	result, err := PartTwo("5 6 4 2 1")
+	assert.NoError(t, err)
+	run.BailIfFailed(t)
+	assert.Equal(t, 1, result)
+}
+
+func TestPartTwoWithLastNumberBad(t *testing.T) {
+	result, err := PartTwo("7 6 4 2 3")
+	assert.NoError(t, err)
+	run.BailIfFailed(t)
+	assert.Equal(t, 1, result)
+}
