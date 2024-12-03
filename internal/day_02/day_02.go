@@ -74,10 +74,14 @@ func rowIsSafe(row []int) bool {
 
 func rowIsSafeWithSkip(row []int) bool {
 	overallDirection := overallDirection(row)
-	badIntervals := make([]int, 0)
+	badIntervals := make([]int, 0, 2)
 
 	for i := 0; i < len(row) - 1; i++ {
 		if !pairIsSafe(row[i], row[i + 1], overallDirection) {
+			// if we already have two bad intervals, bail early
+			if len(badIntervals) == 2 {
+				return false
+			}
 			badIntervals = append(badIntervals, i)
 		}
 	}
