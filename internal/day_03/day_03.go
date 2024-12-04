@@ -26,10 +26,7 @@ func PartOne(input string) (int, error) {
 }
 
 func PartTwo(input string) (int, error) {
-	doDontExpr := strings.Join(
-		[]string{wrapNonCapturing(mulExpr), wrapNonCapturing(doExpr), wrapNonCapturing(dontExpr)},
-		"|",
-	)
+	doDontExpr := strings.Join([]string{mulExpr, doExpr, dontExpr}, "|")
 	doDontMatch := regexp.MustCompile(doDontExpr)
 	mulMatch := regexp.MustCompile(mulExpr)
 
@@ -60,10 +57,6 @@ func PartTwo(input string) (int, error) {
 	}
 
 	return total, nil
-}
-
-func wrapNonCapturing(exp string) string {
-	return `(?:` + exp + `)`
 }
 
 func getMulMatchValue(submatch []string) (int, error) {
