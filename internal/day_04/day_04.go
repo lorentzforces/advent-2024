@@ -5,36 +5,35 @@ import (
 )
 
 func PartOne(input string) (int, error) {
-	grid := readGrid(input)
-	searchLetters := []rune("XMAS")
+	wordGrid := readGrid(input)
+	results := wordGrid.findInGrid("XMAS", cardinalAndDiagonalBasis)
+	return len(results), nil
+}
 
-	startLocations := make([]vec, 0, 10)
-	for x := 0; x < grid.width; x++ {
-		for y := 0; y < grid.height; y++ {
-			pos := vec{x, y}
-			if grid.charAt(pos) == searchLetters[0] {
-				startLocations = append(startLocations, pos)
-			}
+func PartTwo(input string) (int, error) {
+	wordGrid := readGrid(input)
+	results := wordGrid.findInGrid("MAS", diagonalBasis)
+
+	intersections := make(map[vec]int)
+	for _, result := range results {
+		secondLetterLoc := result.loc.add(result.dir)
+		currCount, present := intersections[secondLetterLoc]
+		if present {
+			currCount += 1
+		} else {
+			currCount = 1
+		}
+		intersections[secondLetterLoc] = currCount
+	}
+
+	exCount := 0
+	for _, intersectionCount := range intersections {
+		if intersectionCount == 2 {
+			exCount++
 		}
 	}
 
-	finds := 0
-	for _, startPos := range startLocations {
-		for _, dir := range basisVecs {
-			for currChar := 1; currChar < len(searchLetters); currChar++ {
-				checkPos := startPos.add(dir.mul(currChar))
-				foundNext := grid.charAt(checkPos) == searchLetters[currChar]
-				if !foundNext {
-					break
-				}
-				if foundNext && currChar == len(searchLetters) - 1 {
-					finds++
-				}
-			}
-		}
-	}
-
-	return finds, nil
+	return exCount, nil
 }
 
 // We assume our input is a string that represents a properly-formed grid, delimited by newlines.
@@ -73,6 +72,39 @@ func (g grid) charAt(coords vec) rune {
 	return g.contents[coords.y][coords.x]
 }
 
+// Assumes that the word to find is not a palindrome and is at least two letters.
+func (g grid) findInGrid(word string, basisVecs []vec) []findResult {
+	searchLetters := []rune(word)
+
+	startLocations := make([]vec, 0, 10)
+	for x := 0; x < g.width; x++ {
+		for y := 0; y < g.height; y++ {
+			pos := vec{x, y}
+			if g.charAt(pos) == searchLetters[0] {
+				startLocations = append(startLocations, pos)
+			}
+		}
+	}
+
+	finds := make([]findResult, 0, len(startLocations))
+	for _, startPos := range startLocations {
+		for _, dir := range basisVecs {
+			for currChar := 1; currChar < len(searchLetters); currChar++ {
+				checkPos := startPos.add(dir.mul(currChar))
+				foundNext := g.charAt(checkPos) == searchLetters[currChar]
+				if !foundNext {
+					break
+				}
+				if foundNext && currChar == len(searchLetters) - 1 {
+					finds = append(finds, findResult{ loc: startPos, dir: dir })
+				}
+			}
+		}
+	}
+
+	return finds
+}
+
 type vec struct {
 	x int
 	y int
@@ -92,7 +124,12 @@ func (v vec) mul(a int) vec {
 	}
 }
 
-var basisVecs = []vec{
+type findResult struct {
+	loc vec
+	dir vec
+}
+
+var cardinalAndDiagonalBasis = []vec{
 	{-1, -1},
 	{-1, 0},
 	{-1, 1},
@@ -100,5 +137,12 @@ var basisVecs = []vec{
 	{0, 1},
 	{1, -1},
 	{1, 0},
+	{1, 1},
+}
+
+var diagonalBasis = []vec{
+	{-1, -1},
+	{-1, 1},
+	{1, -1},
 	{1, 1},
 }

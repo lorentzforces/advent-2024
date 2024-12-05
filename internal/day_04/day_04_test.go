@@ -26,3 +26,10 @@ func TestPartOneSampleInput(t *testing.T) {
 	run.BailIfFailed(t)
 	assert.Equal(t, 18, result)
 }
+
+func TestPartTwoSampleInput(t *testing.T) {
+	result, err := PartTwo(testInput)
+	assert.NoError(t, err)
+	run.BailIfFailed(t)
+	assert.Equal(t, 9, result)
+}
