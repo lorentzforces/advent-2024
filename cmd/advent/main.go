@@ -8,6 +8,7 @@ import (
 	"github.com/lorentzforces/advent-2024/internal/day_02"
 	"github.com/lorentzforces/advent-2024/internal/day_03"
 	"github.com/lorentzforces/advent-2024/internal/day_04"
+	"github.com/lorentzforces/advent-2024/internal/day_05"
 	"github.com/lorentzforces/advent-2024/internal/run"
 )
 
@@ -80,6 +81,18 @@ var runData = []run.PuzzleData{
 		Part: 2,
 		InputFile: "inputs/day_04_input.txt",
 		Fn: func(s string) (any, error) { return day_04.PartTwo(s) },
+	},
+	{
+		Day: 5,
+		Part: 1,
+		InputFile: "inputs/day_05_input.txt",
+		Fn: func(s string) (any, error) { return day_05.PartOne(s) },
+	},
+	{
+		Day: 5,
+		Part: 2,
+		InputFile: "inputs/day_05_input.txt",
+		Fn: func(s string) (any, error) { return day_05.PartTwo(s) },
 	},
 }
 

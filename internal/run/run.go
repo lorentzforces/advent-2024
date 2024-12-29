@@ -31,6 +31,24 @@ func AsLines(s string) []string {
 	return lines
 }
 
+func AsLinesSplitOnBlanks(s string) [][]string {
+	lines := AsLines(s)
+
+	splits := make([][]string, 0, 1)
+	start := 0
+	for i, line := range lines {
+		if line == "" {
+			splits = append(splits, lines[start:i])
+			start = i + 1
+		}
+	}
+
+	splits = append(splits, lines[start:])
+	return splits
+}
+
 func BailIfFailed(t *testing.T) {
 	if t.Failed() { t.FailNow() }
 }
+
+var Empty struct{}
