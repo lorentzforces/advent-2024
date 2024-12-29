@@ -59,6 +59,8 @@ func readGrid(input string) grid {
 		}
 }
 
+// TODO: factor out grid/vec/other storage to a dedicated, shared file
+// see also: day 06
 type grid struct {
 	contents [][]rune
 	height int
