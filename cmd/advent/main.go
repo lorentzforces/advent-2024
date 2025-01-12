@@ -101,6 +101,12 @@ var runData = []run.PuzzleData{
 		InputFile: "inputs/day_06_input.txt",
 		Fn: func(s string) (any, error) { return day_06.PartOne(s) },
 	},
+	{
+		Day: 6,
+		Part: 2,
+		InputFile: "inputs/day_06_input.txt",
+		Fn: func(s string) (any, error) { return day_06.PartTwo(s) },
+	},
 }
 
 func runAll(puzzles []run.PuzzleData) []puzzleResult {

@@ -9,45 +9,159 @@ import (
 
 func PartOne(input string) (int, error) {
 	floorGrid := readGrid(input)
-	startingLocation, found := floorGrid.findSingleChar('^')
+	startingCoords, found := floorGrid.findSingleChar('^')
 	if !found {
 		return 0, fmt.Errorf("Starting character not found in grid")
 	}
 
-	location := guardLocation{
-		currLocation: startingLocation,
+	startingLocation := guardLocation{
+		coords: startingCoords,
 		facing: directionFrom(up),
-		onMap: true,
 	}
 
-	visitedLocations := make(map[vec]struct{}, 0)
-	for location.onMap {
-		visitedLocations[location.currLocation] = run.Empty
-		doMove(floorGrid, &location)
+	gameState := initGameState(floorGrid, startingLocation)
+	for gameState.onMap {
+		gameState.doMove()
 	}
 
-	return len(visitedLocations), nil
+	return len(gameState.visitedLocations), nil
 }
 
-const impassableTile = '#'
+func PartTwo(input string) (int, error) {
+	floorGrid := readGrid(input)
+	startingCoords, found := floorGrid.findSingleChar('^')
+	if !found {
+		return 0, fmt.Errorf("Starting character not found in grid")
+	}
 
-func doMove(floorMap grid, location *guardLocation) {
-	aheadLocation := location.currLocation.add(location.facing.unitVec)
-	aheadTile := floorMap.charAt(aheadLocation)
+	startingLocation := guardLocation{
+		coords: startingCoords,
+		facing: directionFrom(up),
+	}
+
+	gameState := initGameState(floorGrid, startingLocation)
+	for gameState.onMap {
+		gameState.doMove()
+	}
+
+	return len(gameState.loopingObstaclePlacements), nil
+}
+
+const impassableTile rune = '#'
+
+type gameState struct {
+	floorMap grid
+
+	location guardLocation
+
+	// set of all coordinates visited
+	visitedLocations map[vec]struct{}
+
+	// set of all path elements visited - this includes coordinates as well as direction facing
+	pathElements map[guardLocation]struct{}
+
+	// set of all locations where it is determined that placing an obstacle would induce a loop
+	loopingObstaclePlacements map[vec]struct{}
+
+	// Whether the location in this state is within the bounds of the grid. This is probably
+	// better if it were factored into something within the grid implementation itself, but
+	// I'm not trying to do that level of effort right now.
+	onMap bool
+}
+
+func initGameState(floorMap grid, startingLocation guardLocation) *gameState {
+	state := gameState{
+		floorMap: floorMap,
+		location: startingLocation,
+		visitedLocations: make(map[vec]struct{}, 0),
+		pathElements: make(map[guardLocation]struct{}, 0),
+		loopingObstaclePlacements: make(map[vec]struct{}, 0),
+		onMap: true,
+	}
+	state.visitedLocations[state.location.coords] = run.Empty
+	state.pathElements[state.location] = run.Empty
+	return &state
+}
+
+func (self *gameState) doMove() {
+	aheadCoords := self.location.coords.add(self.location.facing.unitVec)
+	aheadTile := self.floorMap.charAt(aheadCoords)
+
 	if aheadTile == impassableTile {
-		location.facing = location.facing.rightAngleClockwise()
+		self.location.facing = self.location.facing.rightAngleClockwise()
 	} else {
-		location.currLocation = aheadLocation
-		if floorMap.charAt(aheadLocation) == 0 {
-			location.onMap = false
+		_, alreadyTrodden := self.visitedLocations[aheadCoords]
+		// if the guard has already walked a path, there can't be an obstacle there
+		if !alreadyTrodden && aheadTile != 0 && self.rightTurnWouldLoop() {
+			self.loopingObstaclePlacements[aheadCoords] = run.Empty
 		}
+		self.location.coords = aheadCoords
+	}
+
+	if self.floorMap.charAt(self.location.coords) == 0 {
+		self.onMap = false
+	} else {
+		self.visitedLocations[self.location.coords] = run.Empty
+		self.pathElements[self.location] = run.Empty
+	}
+}
+
+// TODO: this doesn't work, and I'm not 100% sure why (we do know that the correct answer is
+// greater than ~800ish)
+
+// Create a ghost and start walking right - if this intersects with a path element already taken,
+// that means that turning right would put the guard into a loop. Since turning right at that
+// location would loop, that means that placing an obstacle directly ahead would induce a loop.
+func (self *gameState) rightTurnWouldLoop() bool {
+	newObstacleCoords := self.location.coords.add(self.location.facing.unitVec)
+	ghostLoc := guardLocation{
+		coords: self.location.coords,
+		facing: self.location.facing.rightAngleClockwise(),
+	}
+	ghostPath := make(map[guardLocation]struct{}, 0)
+	ghostPath[ghostLoc] = run.Empty
+
+	// check initial location
+	if _, pathSeenBefore := self.pathElements[ghostLoc]; pathSeenBefore {
+		return true
+	}
+
+	// stupid duplicated logic :'(
+	// I'm not proud of it, but building an abstraction seemed more confusing than just doing this
+	for {
+		aheadCoords := ghostLoc.coords.add(ghostLoc.facing.unitVec)
+		aheadTile := self.floorMap.charAt(aheadCoords)
+
+		if aheadTile == impassableTile || newObstacleCoords.equals(aheadCoords) {
+			ghostLoc.facing = ghostLoc.facing.rightAngleClockwise()
+		} else {
+			ghostLoc.coords = aheadCoords
+		}
+
+		// path has gone off-map
+		if self.floorMap.charAt(ghostLoc.coords) == 0 {
+			return false
+		}
+
+		if _, pathSeenBefore := self.pathElements[ghostLoc]; pathSeenBefore {
+			return true
+		}
+
+		if _, ghostPathSeenBefore := ghostPath[ghostLoc]; ghostPathSeenBefore {
+			return true
+		}
+
+		ghostPath[ghostLoc] = run.Empty
 	}
 }
 
 type guardLocation struct {
-	currLocation vec
+	coords vec
 	facing direction
-	onMap bool
+}
+
+func (self guardLocation) String() string {
+	return fmt.Sprintf("{coords:%v, facing:%s}", self.coords, self.facing.label)
 }
 
 type directionId uint8
@@ -170,9 +284,13 @@ type vec struct {
 	y int
 }
 
-func (v vec) add(a vec) vec {
+func (self vec) add(a vec) vec {
 	return vec{
-		x: a.x + v.x,
-		y: a.y + v.y,
+		x: a.x + self.x,
+		y: a.y + self.y,
 	}
+}
+
+func (self vec) equals(a vec) bool {
+	return self.x == a.x && self.y == a.y
 }
