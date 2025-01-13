@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/lorentzforces/advent-2024/internal/run"
+	"github.com/lorentzforces/advent-2024/internal/stores"
 )
 
 func PartOne(input string) (int, error) {
@@ -141,14 +142,14 @@ func parseLists(lines []string) ([][]int, error) {
 
 type constraintData struct {
 	// mapping of orderings according to their "after" value
-	pool map[int]orderingSet
-	currBadValues intSet
+	pool map[int]stores.Set[ordering]
+	currBadValues stores.Set[int]
 }
 
 func makeConstraintData() constraintData {
 	return constraintData {
-		pool: make(map[int]orderingSet),
-		currBadValues: make(intSet),
+		pool: make(map[int]stores.Set[ordering]),
+		currBadValues: stores.EmptySet[int](),
 	}
 }
 
@@ -163,12 +164,12 @@ func (self *constraintData) meetsConstraints(seq []int) bool {
 }
 
 func (self *constraintData) resetCurrentConstraints() {
-	self.currBadValues = make(map[int]struct{})
+	self.currBadValues = stores.EmptySet[int]()
 }
 
 func (self *constraintData) registerConstraint(o ordering) {
 	orderingsForKey := getOrInit(self.pool, o.after)
-	orderingsForKey[o] = run.Empty
+	orderingsForKey.Put(o)
 	self.pool[o.after] = orderingsForKey
 }
 
@@ -176,14 +177,14 @@ func (self *constraintData) registerConstraint(o ordering) {
 // Returns false if the value violates ordering rules based on prior values seen since
 // resetCurrentConstraints() was last called.
 func (self *constraintData) seeValue(val int) bool {
-	if _, forbidden := self.currBadValues[val]; forbidden {
+	if self.currBadValues.Contains(val) {
 		return false
 	}
 
 	orderingsForKey, hasOrderings := self.pool[val]
 	if hasOrderings {
-		for ordering, _ := range orderingsForKey {
-			self.currBadValues[ordering.before] = run.Empty
+		for ordering := range orderingsForKey.Vals() {
+			self.currBadValues.Put(ordering.before)
 		}
 	}
 	return true
@@ -198,8 +199,8 @@ func (self *constraintData) sortSequence(seq []int) {
 	slices.SortFunc(seq, func(a, b int) int {
 		aRules := self.pool[a]
 		bRules := self.pool[b]
-		aComesAfter := aRules.hasOrderingWithValBefore(b)
-		bComesAfter := bRules.hasOrderingWithValBefore(a)
+		aComesAfter := hasOrderingWithValBefore(aRules, b)
+		bComesAfter := hasOrderingWithValBefore(bRules, a)
 
 		switch {
 		case bComesAfter: return -1
@@ -209,10 +210,10 @@ func (self *constraintData) sortSequence(seq []int) {
 	})
 }
 
-func getOrInit(orderings map[int]orderingSet, key int) orderingSet {
+func getOrInit(orderings map[int]stores.Set[ordering], key int) stores.Set[ordering] {
 	val, present := orderings[key]
 	if !present {
-		val = make(orderingSet, 0)
+		val = stores.EmptySet[ordering]()
 	}
 	return val
 }
@@ -226,19 +227,17 @@ type intSet map[int]struct{}
 
 type orderingSet map[ordering]struct{}
 
-func (self *orderingSet) hasOrderingWithValBefore(n int) bool {
-	for ord, _ := range *self {
+func hasOrderingWithValBefore(set stores.Set[ordering], n int) bool {
+	for ord := range set.Vals() {
 		if ord.before == n { return true }
 	}
-
 	return false
 }
 
-func (self *orderingSet) hasOrderingWithValAfter(n int) bool {
-	for ord, _ := range *self {
+func hasOrderingWithValAfter(set stores.Set[ordering], n int) bool {
+	for ord := range set.Vals() {
 		if ord.after == n { return true }
 	}
-
 	return false
 }
 

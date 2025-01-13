@@ -137,3 +137,8 @@ var directions = map[DirectionId]Direction{
 		Vec2d{X: 1, Y: 0},
 	},
 }
+
+// implement Stringer interface for great formatting justice
+func (self Direction) String() string {
+	return fmt.Sprintf("Direction:%s", self.Label)
+}

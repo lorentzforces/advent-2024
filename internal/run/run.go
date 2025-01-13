@@ -50,5 +50,3 @@ func AsLinesSplitOnBlanks(s string) [][]string {
 func BailIfFailed(t *testing.T) {
 	if t.Failed() { t.FailNow() }
 }
-
-var Empty struct{}

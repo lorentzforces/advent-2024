@@ -3,8 +3,8 @@ package day_06
 import (
 	"fmt"
 
-	"github.com/lorentzforces/advent-2024/internal/run"
 	"github.com/lorentzforces/advent-2024/internal/spatial"
+	"github.com/lorentzforces/advent-2024/internal/stores"
 )
 
 func PartOne(input string) (int, error) {
@@ -24,7 +24,7 @@ func PartOne(input string) (int, error) {
 		gameState.doMove()
 	}
 
-	return len(gameState.visitedLocations), nil
+	return gameState.visitedLocations.Len(), nil
 }
 
 func PartTwo(input string) (int, error) {
@@ -44,7 +44,7 @@ func PartTwo(input string) (int, error) {
 		gameState.doMove()
 	}
 
-	return len(gameState.loopingObstaclePlacements), nil
+	return gameState.loopingObstaclePlacements.Len(), nil
 }
 
 const impassableTile rune = '#'
@@ -55,14 +55,14 @@ type gameState struct {
 	location guardLocation
 
 	// set of all coordinates visited
-	visitedLocations map[spatial.Vec2d]struct{}
+	visitedLocations stores.Set[spatial.Vec2d]
 
 	// set of all path elements visited - this includes coordinates as well as direction facing
-	pathElements map[guardLocation]struct{}
+	pathElements stores.Set[guardLocation]
 
 	trackingLoopingObstacles bool
 	// set of all locations where it is determined that placing an obstacle would induce a loop
-	loopingObstaclePlacements map[spatial.Vec2d]struct{}
+	loopingObstaclePlacements stores.Set[spatial.Vec2d]
 
 	// Whether the location in this state is within the bounds of the grid. This is probably
 	// better if it were factored into something within the grid implementation itself, but
@@ -78,14 +78,14 @@ func initGameState(
 	state := gameState{
 		floorMap: floorMap,
 		location: startingLocation,
-		visitedLocations: make(map[spatial.Vec2d]struct{}, 0),
-		pathElements: make(map[guardLocation]struct{}, 0),
+		visitedLocations: stores.EmptySet[spatial.Vec2d](),
+		pathElements: stores.EmptySet[guardLocation](),
 		trackingLoopingObstacles: trackLoopingObstacles,
-		loopingObstaclePlacements: make(map[spatial.Vec2d]struct{}, 0),
+		loopingObstaclePlacements: stores.EmptySet[spatial.Vec2d](),
 		onMap: true,
 	}
-	state.visitedLocations[state.location.coords] = run.Empty
-	state.pathElements[state.location] = run.Empty
+	state.visitedLocations.Put(state.location.coords)
+	state.pathElements.Put(state.location)
 	return &state
 }
 
@@ -96,14 +96,14 @@ func (self *gameState) doMove() {
 	if aheadTile == impassableTile {
 		self.location.facing = rightAngleClockwise(self.location.facing)
 	} else {
-		_, alreadyTrodden := self.visitedLocations[aheadCoords]
+		alreadyTrodden := self.visitedLocations.Contains(aheadCoords)
 		shouldCheckForLoops :=
 			self.trackingLoopingObstacles &&
 			// if the guard has already walked a path, there can't be an obstacle there
 			!alreadyTrodden &&
 			aheadTile != 0
 		if shouldCheckForLoops && self.rightTurnWouldLoop() {
-			self.loopingObstaclePlacements[aheadCoords] = run.Empty
+			self.loopingObstaclePlacements.Put(aheadCoords)
 		}
 		self.location.coords = aheadCoords
 	}
@@ -111,8 +111,8 @@ func (self *gameState) doMove() {
 	if self.floorMap.IsOutOfBounds(self.location.coords) {
 		self.onMap = false
 	} else {
-		self.visitedLocations[self.location.coords] = run.Empty
-		self.pathElements[self.location] = run.Empty
+		self.visitedLocations.Put(self.location.coords)
+		self.pathElements.Put(self.location)
 	}
 }
 
@@ -125,11 +125,11 @@ func (self *gameState) rightTurnWouldLoop() bool {
 		coords: self.location.coords,
 		facing: rightAngleClockwise(self.location.facing),
 	}
-	ghostPath := make(map[guardLocation]struct{}, 0)
-	ghostPath[ghostLoc] = run.Empty
+	ghostPath := stores.EmptySet[guardLocation]()
+	ghostPath.Put(ghostLoc)
 
 	// check initial location
-	if _, pathSeenBefore := self.pathElements[ghostLoc]; pathSeenBefore {
+	if self.pathElements.Contains(ghostLoc) {
 		return true
 	}
 
@@ -150,15 +150,15 @@ func (self *gameState) rightTurnWouldLoop() bool {
 			return false
 		}
 
-		if _, pathSeenBefore := self.pathElements[ghostLoc]; pathSeenBefore {
+		if self.pathElements.Contains(ghostLoc) {
 			return true
 		}
 
-		if _, ghostPathSeenBefore := ghostPath[ghostLoc]; ghostPathSeenBefore {
+		if ghostPath.Contains(ghostLoc) {
 			return true
 		}
 
-		ghostPath[ghostLoc] = run.Empty
+		ghostPath.Put(ghostLoc)
 	}
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/lorentzforces/advent-2024/internal/day_01"
 	"github.com/lorentzforces/advent-2024/internal/day_02"
@@ -124,7 +125,11 @@ func runAll(puzzles []run.PuzzleData) []puzzleResult {
 			continue
 		}
 
+		// we don't include file read time in our timing, just the actual solution execution
+		start := time.Now()
 		output, err := d.Fn(input)
+		result.duration = time.Since(start)
+
 		result.err = err
 		result.output = fmt.Sprint(output)
 		results = append(results, result)
@@ -138,10 +143,14 @@ type puzzleResult struct {
 	part int
 	output string
 	err error
+	duration time.Duration
 }
 
 func (pr puzzleResult) String() string {
-	return fmt.Sprintf("Day %02d, Part %02d output: %s\n", pr.day, pr.part, pr.output)
+	return fmt.Sprintf(
+		"Day %02d, Part %02d output: %s  [%s]\n",
+		pr.day, pr.part, pr.output, pr.duration,
+	)
 }
 
 func (pr puzzleResult) PrintErr() string {
