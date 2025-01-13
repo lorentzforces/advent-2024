@@ -19,7 +19,7 @@ func PartOne(input string) (int, error) {
 		facing: spatial.DirectionFrom(spatial.Up),
 	}
 
-	gameState := initGameState(floorGrid, startingLocation)
+	gameState := initGameState(floorGrid, startingLocation, false)
 	for gameState.onMap {
 		gameState.doMove()
 	}
@@ -39,7 +39,7 @@ func PartTwo(input string) (int, error) {
 		facing: spatial.DirectionFrom(spatial.Up),
 	}
 
-	gameState := initGameState(floorGrid, startingLocation)
+	gameState := initGameState(floorGrid, startingLocation, true)
 	for gameState.onMap {
 		gameState.doMove()
 	}
@@ -60,6 +60,7 @@ type gameState struct {
 	// set of all path elements visited - this includes coordinates as well as direction facing
 	pathElements map[guardLocation]struct{}
 
+	trackingLoopingObstacles bool
 	// set of all locations where it is determined that placing an obstacle would induce a loop
 	loopingObstaclePlacements map[spatial.Vec2d]struct{}
 
@@ -69,12 +70,17 @@ type gameState struct {
 	onMap bool
 }
 
-func initGameState(floorMap spatial.Grid, startingLocation guardLocation) *gameState {
+func initGameState(
+	floorMap spatial.Grid,
+	startingLocation guardLocation,
+	trackLoopingObstacles bool,
+) *gameState {
 	state := gameState{
 		floorMap: floorMap,
 		location: startingLocation,
 		visitedLocations: make(map[spatial.Vec2d]struct{}, 0),
 		pathElements: make(map[guardLocation]struct{}, 0),
+		trackingLoopingObstacles: trackLoopingObstacles,
 		loopingObstaclePlacements: make(map[spatial.Vec2d]struct{}, 0),
 		onMap: true,
 	}
@@ -91,8 +97,12 @@ func (self *gameState) doMove() {
 		self.location.facing = rightAngleClockwise(self.location.facing)
 	} else {
 		_, alreadyTrodden := self.visitedLocations[aheadCoords]
-		// if the guard has already walked a path, there can't be an obstacle there
-		if !alreadyTrodden && aheadTile != 0 && self.rightTurnWouldLoop() {
+		shouldCheckForLoops :=
+			self.trackingLoopingObstacles &&
+			// if the guard has already walked a path, there can't be an obstacle there
+			!alreadyTrodden &&
+			aheadTile != 0
+		if shouldCheckForLoops && self.rightTurnWouldLoop() {
 			self.loopingObstaclePlacements[aheadCoords] = run.Empty
 		}
 		self.location.coords = aheadCoords
@@ -105,9 +115,6 @@ func (self *gameState) doMove() {
 		self.pathElements[self.location] = run.Empty
 	}
 }
-
-// TODO: this doesn't work, and I'm not 100% sure why (we do know that the correct answer is
-// greater than ~800ish)
 
 // Create a ghost and start walking right - if this intersects with a path element already taken,
 // that means that turning right would put the guard into a loop. Since turning right at that

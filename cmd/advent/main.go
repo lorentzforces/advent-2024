@@ -14,6 +14,7 @@ import (
 )
 
 // TODO: add CLI parameters to run specific days
+// TODO: parallelize running days
 func main() {
 	results := runAll(runData)
 	slices.SortFunc(
