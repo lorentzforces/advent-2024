@@ -17,6 +17,13 @@ func (self Vec2d) Add(a Vec2d) Vec2d {
 	}
 }
 
+func (self Vec2d) Mul(a int) Vec2d {
+	return Vec2d{
+		X: self.X * a,
+		Y: self.Y * a,
+	}
+}
+
 func (self Vec2d) Equals(a Vec2d) bool {
 	return self.X == a.X && self.Y == a.Y
 }
