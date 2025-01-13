@@ -66,6 +66,10 @@ func (self Grid) CharAt(coords Vec2d) rune {
 	return self.Contents[coords.Y][coords.X]
 }
 
+func (self Grid) IsOutOfBounds(coords Vec2d) bool {
+	return self.CharAt(coords) == 0
+}
+
 // Finds a single rune in the grid. If there is more than one instance of that rune in the grid,
 // returns the first one found (closest to 0, 0).
 func (self Grid) FindSingleChar(c rune) (location Vec2d, found bool) {

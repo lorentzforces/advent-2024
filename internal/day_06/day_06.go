@@ -108,7 +108,7 @@ func (self *gameState) doMove() {
 		self.location.coords = aheadCoords
 	}
 
-	if self.floorMap.CharAt(self.location.coords) == 0 {
+	if self.floorMap.IsOutOfBounds(self.location.coords) {
 		self.onMap = false
 	} else {
 		self.visitedLocations[self.location.coords] = run.Empty
@@ -146,7 +146,7 @@ func (self *gameState) rightTurnWouldLoop() bool {
 		}
 
 		// path has gone off-map
-		if self.floorMap.CharAt(ghostLoc.coords) == 0 {
+		if self.floorMap.IsOutOfBounds(ghostLoc.coords) {
 			return false
 		}
 
