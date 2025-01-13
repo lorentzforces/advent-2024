@@ -94,7 +94,7 @@ func (self *gameState) doMove() {
 	aheadTile := self.floorMap.CharAt(aheadCoords)
 
 	if aheadTile == impassableTile {
-		self.location.facing = rightAngleClockwise(self.location.facing)
+		self.location.facing = self.location.facing.StepClockwise()
 	} else {
 		alreadyTrodden := self.visitedLocations.Contains(aheadCoords)
 		shouldCheckForLoops :=
@@ -123,7 +123,7 @@ func (self *gameState) rightTurnWouldLoop() bool {
 	newObstacleCoords := self.location.coords.Add(self.location.facing.UnitVec)
 	ghostLoc := guardLocation{
 		coords: self.location.coords,
-		facing: rightAngleClockwise(self.location.facing),
+		facing: self.location.facing.StepClockwise(),
 	}
 	ghostPath := stores.EmptySet[guardLocation]()
 	ghostPath.Put(ghostLoc)
@@ -140,7 +140,7 @@ func (self *gameState) rightTurnWouldLoop() bool {
 		aheadTile := self.floorMap.CharAt(aheadCoords)
 
 		if aheadTile == impassableTile || newObstacleCoords.Equals(aheadCoords) {
-			ghostLoc.facing = rightAngleClockwise(ghostLoc.facing)
+			ghostLoc.facing = ghostLoc.facing.StepClockwise()
 		} else {
 			ghostLoc.coords = aheadCoords
 		}
@@ -169,17 +169,4 @@ type guardLocation struct {
 
 func (self guardLocation) String() string {
 	return fmt.Sprintf("{coords:%v, facing:%s}", self.coords, self.facing.Label)
-}
-
-func rightAngleClockwise(d spatial.Direction) spatial.Direction {
-	switch (d.Id) {
-	case spatial.Up: return spatial.Right.Into()
-	case spatial.Right: return spatial.Down.Into()
-	case spatial.Down: return spatial.Left.Into()
-	case spatial.Left: return spatial.Up.Into()
-	default: panic(fmt.Sprintf(
-		"Should be unreachable, determining clockwise right angle from %v",
-		d,
-	))
-	}
 }

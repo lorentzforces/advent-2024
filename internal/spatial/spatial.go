@@ -142,3 +142,16 @@ var directions = map[DirectionId]Direction{
 func (self Direction) String() string {
 	return fmt.Sprintf("Direction:%s", self.Label)
 }
+
+func (self Direction) StepClockwise() Direction {
+	switch (self.Id) {
+	case Up: return Right.Into()
+	case Right: return Down.Into()
+	case Down: return Left.Into()
+	case Left: return Up.Into()
+	default: panic(fmt.Sprintf(
+		"Should be unreachable, determining clockwise right angle from %v",
+		self,
+	))
+	}
+}
