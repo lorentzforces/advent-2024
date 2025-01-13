@@ -2,21 +2,21 @@ package day_06
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/lorentzforces/advent-2024/internal/run"
+	"github.com/lorentzforces/advent-2024/internal/spatial"
 )
 
 func PartOne(input string) (int, error) {
-	floorGrid := readGrid(input)
-	startingCoords, found := floorGrid.findSingleChar('^')
+	floorGrid := spatial.ReadGrid(input)
+	startingCoords, found := floorGrid.FindSingleChar('^')
 	if !found {
 		return 0, fmt.Errorf("Starting character not found in grid")
 	}
 
 	startingLocation := guardLocation{
 		coords: startingCoords,
-		facing: directionFrom(up),
+		facing: spatial.DirectionFrom(spatial.Up),
 	}
 
 	gameState := initGameState(floorGrid, startingLocation)
@@ -28,15 +28,15 @@ func PartOne(input string) (int, error) {
 }
 
 func PartTwo(input string) (int, error) {
-	floorGrid := readGrid(input)
-	startingCoords, found := floorGrid.findSingleChar('^')
+	floorGrid := spatial.ReadGrid(input)
+	startingCoords, found := floorGrid.FindSingleChar('^')
 	if !found {
 		return 0, fmt.Errorf("Starting character not found in grid")
 	}
 
 	startingLocation := guardLocation{
 		coords: startingCoords,
-		facing: directionFrom(up),
+		facing: spatial.DirectionFrom(spatial.Up),
 	}
 
 	gameState := initGameState(floorGrid, startingLocation)
@@ -50,18 +50,18 @@ func PartTwo(input string) (int, error) {
 const impassableTile rune = '#'
 
 type gameState struct {
-	floorMap grid
+	floorMap spatial.Grid
 
 	location guardLocation
 
 	// set of all coordinates visited
-	visitedLocations map[vec]struct{}
+	visitedLocations map[spatial.Vec2d]struct{}
 
 	// set of all path elements visited - this includes coordinates as well as direction facing
 	pathElements map[guardLocation]struct{}
 
 	// set of all locations where it is determined that placing an obstacle would induce a loop
-	loopingObstaclePlacements map[vec]struct{}
+	loopingObstaclePlacements map[spatial.Vec2d]struct{}
 
 	// Whether the location in this state is within the bounds of the grid. This is probably
 	// better if it were factored into something within the grid implementation itself, but
@@ -69,13 +69,13 @@ type gameState struct {
 	onMap bool
 }
 
-func initGameState(floorMap grid, startingLocation guardLocation) *gameState {
+func initGameState(floorMap spatial.Grid, startingLocation guardLocation) *gameState {
 	state := gameState{
 		floorMap: floorMap,
 		location: startingLocation,
-		visitedLocations: make(map[vec]struct{}, 0),
+		visitedLocations: make(map[spatial.Vec2d]struct{}, 0),
 		pathElements: make(map[guardLocation]struct{}, 0),
-		loopingObstaclePlacements: make(map[vec]struct{}, 0),
+		loopingObstaclePlacements: make(map[spatial.Vec2d]struct{}, 0),
 		onMap: true,
 	}
 	state.visitedLocations[state.location.coords] = run.Empty
@@ -84,11 +84,11 @@ func initGameState(floorMap grid, startingLocation guardLocation) *gameState {
 }
 
 func (self *gameState) doMove() {
-	aheadCoords := self.location.coords.add(self.location.facing.unitVec)
-	aheadTile := self.floorMap.charAt(aheadCoords)
+	aheadCoords := self.location.coords.Add(self.location.facing.UnitVec)
+	aheadTile := self.floorMap.CharAt(aheadCoords)
 
 	if aheadTile == impassableTile {
-		self.location.facing = self.location.facing.rightAngleClockwise()
+		self.location.facing = rightAngleClockwise(self.location.facing)
 	} else {
 		_, alreadyTrodden := self.visitedLocations[aheadCoords]
 		// if the guard has already walked a path, there can't be an obstacle there
@@ -98,7 +98,7 @@ func (self *gameState) doMove() {
 		self.location.coords = aheadCoords
 	}
 
-	if self.floorMap.charAt(self.location.coords) == 0 {
+	if self.floorMap.CharAt(self.location.coords) == 0 {
 		self.onMap = false
 	} else {
 		self.visitedLocations[self.location.coords] = run.Empty
@@ -113,10 +113,10 @@ func (self *gameState) doMove() {
 // that means that turning right would put the guard into a loop. Since turning right at that
 // location would loop, that means that placing an obstacle directly ahead would induce a loop.
 func (self *gameState) rightTurnWouldLoop() bool {
-	newObstacleCoords := self.location.coords.add(self.location.facing.unitVec)
+	newObstacleCoords := self.location.coords.Add(self.location.facing.UnitVec)
 	ghostLoc := guardLocation{
 		coords: self.location.coords,
-		facing: self.location.facing.rightAngleClockwise(),
+		facing: rightAngleClockwise(self.location.facing),
 	}
 	ghostPath := make(map[guardLocation]struct{}, 0)
 	ghostPath[ghostLoc] = run.Empty
@@ -129,17 +129,17 @@ func (self *gameState) rightTurnWouldLoop() bool {
 	// stupid duplicated logic :'(
 	// I'm not proud of it, but building an abstraction seemed more confusing than just doing this
 	for {
-		aheadCoords := ghostLoc.coords.add(ghostLoc.facing.unitVec)
-		aheadTile := self.floorMap.charAt(aheadCoords)
+		aheadCoords := ghostLoc.coords.Add(ghostLoc.facing.UnitVec)
+		aheadTile := self.floorMap.CharAt(aheadCoords)
 
-		if aheadTile == impassableTile || newObstacleCoords.equals(aheadCoords) {
-			ghostLoc.facing = ghostLoc.facing.rightAngleClockwise()
+		if aheadTile == impassableTile || newObstacleCoords.Equals(aheadCoords) {
+			ghostLoc.facing = rightAngleClockwise(ghostLoc.facing)
 		} else {
 			ghostLoc.coords = aheadCoords
 		}
 
 		// path has gone off-map
-		if self.floorMap.charAt(ghostLoc.coords) == 0 {
+		if self.floorMap.CharAt(ghostLoc.coords) == 0 {
 			return false
 		}
 
@@ -156,141 +156,23 @@ func (self *gameState) rightTurnWouldLoop() bool {
 }
 
 type guardLocation struct {
-	coords vec
-	facing direction
+	coords spatial.Vec2d
+	facing spatial.Direction
 }
 
 func (self guardLocation) String() string {
-	return fmt.Sprintf("{coords:%v, facing:%s}", self.coords, self.facing.label)
+	return fmt.Sprintf("{coords:%v, facing:%s}", self.coords, self.facing.Label)
 }
 
-type directionId uint8
-const (
-	up directionId = iota
-	down
-	left
-	right
-)
-
-type direction struct {
-	id directionId
-	label string
-	unitVec vec
-}
-
-var directions = map[directionId]direction{
-	up: {
-		up,
-		"UP",
-		vec{0, -1},
-	},
-	down: {
-		down,
-		"DOWN",
-		vec{0, 1},
-	},
-	left: {
-		left,
-		"LEFT",
-		vec{-1, 0},
-	},
-	right: {
-		right,
-		"RIGHT",
-		vec{1, 0},
-	},
-}
-
-func directionFrom(id directionId) direction {
-	dir, found := directions[id]
-	if !found {
-		panic(fmt.Sprintf(
-			"Bad direction: was given a direction ID (enum), but the given value did not match " +
-				"any known value: %v\n",
-			id,
-		))
-	}
-	return dir
-}
-
-func (self direction) rightAngleClockwise() direction {
-	switch (self.id) {
-	case up: return directionFrom(right)
-	case right: return directionFrom(down)
-	case down: return directionFrom(left)
-	case left: return directionFrom(up)
+func rightAngleClockwise(d spatial.Direction) spatial.Direction {
+	switch (d.Id) {
+	case spatial.Up: return spatial.DirectionFrom(spatial.Right)
+	case spatial.Right: return spatial.DirectionFrom(spatial.Down)
+	case spatial.Down: return spatial.DirectionFrom(spatial.Left)
+	case spatial.Left: return spatial.DirectionFrom(spatial.Up)
 	default: panic(fmt.Sprintf(
 		"Should be unreachable, determining clockwise right angle from %v",
-		self,
+		d,
 	))
 	}
-}
-
-// We assume our input is a string that represents a properly-formed grid, delimited by newlines.
-// Don't make me a liar.
-// Also I'm PRETTY sure that casting sub-slices to []rune will just map to slices of the original
-// backing string/slice, and won't allocate more rune slices. PRETTY sure.
-func readGrid(input string) grid {
-	newlinePattern := regexp.MustCompile("\n")
-	width := newlinePattern.FindStringIndex(input)[0]
-	stride := width + 1
-
-	runeGrid := make([][]rune, 0, 1)
-	runeGrid = append(runeGrid, []rune(input[0:width]))
-
-	for i := stride; i < len(input); i += stride {
-		runeGrid = append(runeGrid, []rune(input[i:i + width]))
-	}
-
-	return grid{
-			contents: runeGrid,
-			height: len(runeGrid),
-			width: len(runeGrid[0]),
-		}
-}
-
-// TODO: factor out grid/vec/other storage to a dedicated, shared file
-// see also: day 04
-type grid struct {
-	contents [][]rune
-	height int
-	width int
-}
-
-func (self grid) charAt(coords vec) rune {
-	if coords.x < 0 || coords.x >= self.width || coords.y < 0 || coords.y >= self.height {
-		return 0 // null character
-	}
-	return self.contents[coords.y][coords.x]
-}
-
-// Finds a single rune in the grid. If there is more than one instance of that rune in the grid,
-// returns the first one found (closest to 0, 0).
-func (self grid) findSingleChar(c rune) (location vec, found bool) {
-	for x := 0; x < self.width; x++ {
-		for y := 0; y < self.height; y++ {
-			pos := vec{x, y}
-			if self.charAt(pos) == c {
-				return pos, true
-			}
-		}
-	}
-
-	return vec{}, false
-}
-
-type vec struct {
-	x int
-	y int
-}
-
-func (self vec) add(a vec) vec {
-	return vec{
-		x: a.x + self.x,
-		y: a.y + self.y,
-	}
-}
-
-func (self vec) equals(a vec) bool {
-	return self.x == a.x && self.y == a.y
 }
