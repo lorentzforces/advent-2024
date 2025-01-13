@@ -93,6 +93,18 @@ const (
 	Right
 )
 
+func (self DirectionId) Into() Direction {
+	dir, found := directions[self]
+	if !found {
+		panic(fmt.Sprintf(
+			"Bad direction: was given a direction ID (enum), but the given value did not match " +
+				"any known value: %v\n",
+			self,
+		))
+	}
+	return dir
+}
+
 type Direction struct {
 	Id DirectionId
 	Label string
@@ -120,16 +132,4 @@ var directions = map[DirectionId]Direction{
 		"RIGHT",
 		Vec2d{X: 1, Y: 0},
 	},
-}
-
-func DirectionFrom(id DirectionId) Direction {
-	dir, found := directions[id]
-	if !found {
-		panic(fmt.Sprintf(
-			"Bad direction: was given a direction ID (enum), but the given value did not match " +
-				"any known value: %v\n",
-			id,
-		))
-	}
-	return dir
 }

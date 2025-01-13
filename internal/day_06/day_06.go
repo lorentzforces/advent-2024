@@ -16,7 +16,7 @@ func PartOne(input string) (int, error) {
 
 	startingLocation := guardLocation{
 		coords: startingCoords,
-		facing: spatial.DirectionFrom(spatial.Up),
+		facing: spatial.Up.Into(),
 	}
 
 	gameState := initGameState(floorGrid, startingLocation, false)
@@ -36,7 +36,7 @@ func PartTwo(input string) (int, error) {
 
 	startingLocation := guardLocation{
 		coords: startingCoords,
-		facing: spatial.DirectionFrom(spatial.Up),
+		facing: spatial.Up.Into(),
 	}
 
 	gameState := initGameState(floorGrid, startingLocation, true)
@@ -173,10 +173,10 @@ func (self guardLocation) String() string {
 
 func rightAngleClockwise(d spatial.Direction) spatial.Direction {
 	switch (d.Id) {
-	case spatial.Up: return spatial.DirectionFrom(spatial.Right)
-	case spatial.Right: return spatial.DirectionFrom(spatial.Down)
-	case spatial.Down: return spatial.DirectionFrom(spatial.Left)
-	case spatial.Left: return spatial.DirectionFrom(spatial.Up)
+	case spatial.Up: return spatial.Right.Into()
+	case spatial.Right: return spatial.Down.Into()
+	case spatial.Down: return spatial.Left.Into()
+	case spatial.Left: return spatial.Up.Into()
 	default: panic(fmt.Sprintf(
 		"Should be unreachable, determining clockwise right angle from %v",
 		d,
